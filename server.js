@@ -28,7 +28,18 @@ function saveData() {
     fs.writeFileSync(dataFilePath, JSON.stringify(urls, null, 2));
 }
 
-// Serve homepage
+// Password protection middleware
+const PASSWORD = "123456789"; // <-- رمز عبور خودتو اینجا میتونی تغییر بدی
+
+function authenticate(req, res, next) {
+    const password = req.query.password;
+    if (!password || password !== PASSWORD) {
+        return res.status(401).send('Unauthorized: Incorrect or missing password.');
+    }
+    next();
+}
+
+// Homepage
 app.get('/', (req, res) => {
     res.send(`
         <!DOCTYPE html>
@@ -39,7 +50,8 @@ app.get('/', (req, res) => {
             <style>
                 body {
                     background-color: #f9f9f9;
-                    font-family: Tahoma, sans-serif;
+                    font-family: 'Courier New', Courier, monospace;
+                    font-style: italic;
                     display: flex;
                     flex-direction: column;
                     justify-content: center;
@@ -61,6 +73,8 @@ app.get('/', (req, res) => {
                     font-size: 18px;
                     cursor: pointer;
                     transition: background-color 0.3s ease;
+                    font-family: 'Courier New', Courier, monospace;
+                    font-style: italic;
                 }
                 button:hover {
                     background-color: #005bb5;
@@ -94,7 +108,7 @@ app.post('/pay', (req, res) => {
     res.redirect(`/thankyou/${hash}`);
 });
 
-// Serve thank you page
+// Thank you page
 app.get('/thankyou/:id', (req, res) => {
     const user = urls.find(u => u.id === req.params.id);
 
@@ -105,7 +119,6 @@ app.get('/thankyou/:id', (req, res) => {
     const fullUrl = `http://localhost:3000/thankyou/${req.params.id}`;
 
     if (user.firstVisit) {
-        // After showing this page once, set firstVisit to false
         user.firstVisit = false;
         saveData();
 
@@ -118,7 +131,8 @@ app.get('/thankyou/:id', (req, res) => {
                 <style>
                     body {
                         background-color: #f9f9f9;
-                        font-family: Tahoma, sans-serif;
+                        font-family: 'Courier New', Courier, monospace;
+                        font-style: italic;
                         display: flex;
                         flex-direction: column;
                         justify-content: center;
@@ -145,6 +159,8 @@ app.get('/thankyou/:id', (req, res) => {
                         border: 1px solid #ccc;
                         border-radius: 6px;
                         text-align: center;
+                        font-family: 'Courier New', Courier, monospace;
+                        font-style: italic;
                     }
                     button.copy-btn {
                         padding: 8px 12px;
@@ -154,6 +170,8 @@ app.get('/thankyou/:id', (req, res) => {
                         border: none;
                         border-radius: 6px;
                         cursor: pointer;
+                        font-family: 'Courier New', Courier, monospace;
+                        font-style: italic;
                     }
                     button.copy-btn:hover {
                         background-color: #005bb5;
@@ -166,6 +184,8 @@ app.get('/thankyou/:id', (req, res) => {
                     <input type="text" id="urlInput" value="${fullUrl}" readonly />
                     <button class="copy-btn" onclick="copyURL()">Copy</button>
                 </div>
+			<p style="margin-top: 20px; font-size: 14px; color: #666;">Save this link in a safe place. You will need it 				later.</p>
+
 
                 <script>
                     function copyURL() {
@@ -189,7 +209,8 @@ app.get('/thankyou/:id', (req, res) => {
                 <style>
                     body {
                         background-color: #f9f9f9;
-                        font-family: Tahoma, sans-serif;
+                        font-family: 'Courier New', Courier, monospace;
+                        font-style: italic;
                         display: flex;
                         flex-direction: column;
                         justify-content: center;
@@ -210,6 +231,16 @@ app.get('/thankyou/:id', (req, res) => {
             </html>
         `);
     }
+});
+
+// API to fetch all URLs (Protected)
+app.get('/api/urls', authenticate, (req, res) => {
+    res.json(urls);
+});
+
+// API to fetch only the count (Protected)
+app.get('/api/count', authenticate, (req, res) => {
+    res.json({ count: urls.length });
 });
 
 // Start server
